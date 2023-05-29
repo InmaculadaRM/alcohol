@@ -1,0 +1,95 @@
+---
+title: "alcohol"
+author: "Inma"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Mount packages
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(kableExtra)
+
+```
+
+
+```{r}
+path <- "https://www.opendata.nhs.scot/dataset/c4db1692-fa02-4a1c-af4c-6039c74633ea/resource/29452b1f-a7be-4e93-9e22-dfa120c2df26/download/arhs_agegender_28_02_2023.csv"
+raw_alcohol <- read_csv(path)
+```
+
+
+```{r cleaning}
+#To have all variables with the same naming style
+alcohol <- raw_alcohol %>%  clean_names()
+```
+
+
+Exploring categorical variables:
+```{r exploring}
+alcohol %>%
+  distinct(condition)
+```
+
+```{r}
+alcohol %>%
+  distinct(gender)
+```
+
+```{r}
+alcohol %>%
+  distinct(age_group)
+```
+
+```{r wrangling + ploting}
+
+#subseting the data for the plot, selecting  and changing some variable types.
+alcohol_all_2021 <- alcohol %>%
+  separate(financial_year, into = c("year", NA), sep = "/") %>%
+  transmute(year, sex = gender, age_group, condition, number_of_stays) %>%
+  # filtering to eliminate aggregated data
+  filter(year == 2021, age_group != "All", sex != "All", condition == "All alcohol conditions")
+alcohol_all_2021
+```
+
+
+```{r}
+# final data to be plotted summarizing the number of stays by age and sex
+alcohol_plot <- alcohol_all_2021 %>%
+group_by(sex, age_group) %>%
+  mutate(age_group = case_when(age_group == "Under 15 years" ~ "0-15 years",
+                               age_group == "65 years and over" ~ "65+ years",
+                               TRUE ~ age_group)) %>%
+   summarize(total= sum(number_of_stays))
+
+# if we want to see the data we are going to plot:
+alcohol_plot %>%
+  kable()
+
+```
+
+
+```{r}
+
+mycolors <- c("#ffc8f1", "#6ec8fa")
+ggplot(alcohol_plot, aes(x=sex, y=total, fill=sex)) + geom_col() +
+  scale_fill_manual(values=mycolors) +
+  facet_wrap(~  age_group, nrow = 2) +
+  labs(
+    title = "Alcohol related hospitalizations in Scotland",
+    subtitle = "number of stays by age group and by sex in 2021",
+    caption = "Data source: www.opendata.nhs.scot",
+    y = "Total number of hospital stays",
+    x = " ",
+    fill = "Sex" ) +
+  theme_bw()
+
+```
+
