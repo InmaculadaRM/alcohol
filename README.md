@@ -1,3 +1,3 @@
 # alcohol
-Practice exercises in Python for the PITDS23 course.
+Practice exercises in Python and R for the PITDS23 course.
 100% reproducible
